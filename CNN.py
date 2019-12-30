@@ -1,13 +1,12 @@
 #   Antonio Leonti
 #   12.29.19
 #   Test CNN: Made to familiarize myself with CNN architecture, python, and PyTorch.
-#   MY BELOVED RESEARCH GROUP: PLEASE DON'T CHANGE WHAT YOU DON'T UNDERSTAND!:)
 
 
 
 import numpy as np #handles very large arrays
 
-from torchvision.datasets import CIFAR10 #our dataset
+from torchvision.datasets import MNIST #our dataset
 from torchvision import transforms
 
 import torch
@@ -27,16 +26,16 @@ def main():
     np.random.seed(144)
     manual_seed(144)
 
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5],[0.5])])
 
     #download data
-    train_set = CIFAR10(root='./cifardata', train=True, download=True, transform=transform)
-    test_set = CIFAR10(root='./cifardata', train=False, download=True, transform=transform)
+    train_set = MNIST(root='./mnist', train=True, download=True, transform=transform)
+    test_set = MNIST(root='./mnist', train=False, download=True, transform=transform)
 
     #counts of images
-    n_training = 20000
-    n_val = 5000
-    n_test = 5000
+    n_training = 50000
+    n_val = 10000
+    n_test = 10000
 
     #Make samplers for each
     train_sampler = SubsetRandomSampler(np.arange(n_training, dtype=np.int64))
@@ -46,8 +45,8 @@ def main():
 
     #Make data loaders for each
     train_loader = DataLoader(train_set, batch_size=32, sampler=train_sampler, num_workers=2)
-    val_loader = DataLoader(train_set, batch_size=128, sampler=val_sampler, num_workers=2)
-    test_loader = DataLoader(test_set, batch_size=4, sampler=test_sampler, num_workers=2)
+    val_loader = DataLoader(train_set, batch_size=32, sampler=val_sampler, num_workers=2)
+    test_loader = DataLoader(test_set, batch_size=32, sampler=test_sampler, num_workers=2)
 
     #We then designate the 10 possible labels for each image:
     classes = ( 'plane', 'car', 'bird', 'cat', 'deer',
@@ -72,7 +71,20 @@ class ConvNet(nn.Module):
         super(ConvNet, self).__init__()
 
         #creating layers for later use; order doesn't matter
-
+        #__TESTING
+        self.__ConvSeq = nn.Sequential(
+            #convolutional layer
+            nn.Conv2d(1, 28, kernel_size=3, stride=1, padding=1),
+            #nn.Dropout2d(p=0.5),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+            #pooling is used to make the detection of features less sensitive to scale and orientation changes
+        )
+        self.__FCSeq = nn.Sequential(
+            #torch.nn.Linear(in_features, out_features)
+            nn.Linear(28*14*14, 32),
+            nn.Linear(32, 10)
+        )
         #Convolution -> ReLU -> Max Pooling
         self.ConvSeq = nn.Sequential(
             #convolutional layer
@@ -89,16 +101,17 @@ class ConvNet(nn.Module):
             nn.Linear(64, 10)
         )
 
+
     #   "Defines the computation performed at every call."
     # ! "Although the recipe for forward pass needs to be defined within forward(), one should call the Module instance afterwards instead [...] since [the module instance] takes care of running the registered hooks while [forward()] silently ignores them."
 
     def forward(self, x): #overrides default; forward pass; do not call
         #Conv -> Dropout -> ReLU -> Max Pool
-        x = self.ConvSeq(x)
+        x = self.__ConvSeq(x)
         #reshape tensor, doesn't copy memory
-        x = x.view(-1, 18*16*16)
+        x = x.view(-1, 28*14*14)
         #fully connected -> fully connected
-        x = self.FCSeq(x)
+        x = self.__FCSeq(x)
         return x
 
     #train the network
@@ -138,10 +151,11 @@ class ConvNet(nn.Module):
                 running_loss += loss_size.data
                 total_train_loss += loss_size.data
 
-                #Print every 10th batch of an epoch
+                #Every 10th batch of an epoch
                 if (i + 1) % (len(train_loader)//10 + 1) == 0:
+                    #print some stats
                     print("Epoch {}, {:d}%\ttrain_loss: {:.2f}, took: {:.2f}s".format(epoch+1, int(100 * (i+1) / len(train_loader)), running_loss / len(train_loader), time() - epoch_start))
-                    #^^^ len(train_loader) = # of image batches
+                    #^^^ "len(train_loader)" = # of image batches
 
                     #Reset running loss and time
                     running_loss = 0.0
