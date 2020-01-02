@@ -4,26 +4,27 @@
 
 
 
-import numpy as np #handles very large arrays
+#import numpy #handles very large arrays
+from numpy import arange, int64, random
 
+#import torchvision
 from torchvision.datasets import MNIST #our dataset
 from torchvision import transforms
 
-import torch
+#import torch
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torch.optim import Adam #optimizer
-from torch import manual_seed
-from torch import nn
+from torch import manual_seed, nn, no_grad
 
 from time import time
 
 
 
-def main():
+def main(): # ALL TEMPORARY... Just for testing CNN on a test dataset
     #set a standard random seed for reproducible results.
-    np.random.seed(144)
+    random.seed(144)
     manual_seed(144)
 
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5],[0.5])])
@@ -38,9 +39,9 @@ def main():
     n_test = 10000
 
     #Make samplers for each
-    train_sampler = SubsetRandomSampler(np.arange(n_training, dtype=np.int64))
-    val_sampler = SubsetRandomSampler(np.arange(n_training, n_training + n_val, dtype=np.int64))
-    test_sampler = SubsetRandomSampler(np.arange(n_test, dtype=np.int64))
+    train_sampler = SubsetRandomSampler(arange(n_training, dtype=int64))
+    val_sampler = SubsetRandomSampler(arange(n_training, n_training + n_val, dtype=int64))
+    test_sampler = SubsetRandomSampler(arange(n_test, dtype=int64))
     #numpy.arange(min,max) = min, min+1, ..., max-1
 
     #Make data loaders for each
@@ -61,33 +62,34 @@ def main():
 
 
 # https://pytorch.org/docs/stable/nn.html?highlight=torch.nn#torch.nn.Module
-#direct implementation questions here^^
+# direct implementation questions here^^
 class ConvNet(nn.Module):
 
-    #Our batch shape for input x is (3, 32, 32)
+    # Our batch shape for input x is (3, 32, 32)
 
-    def __init__(self): #overrides default; initializes ConvNet object
+    def __init__(self): # overrides default; initializes ConvNet object
 
         super(ConvNet, self).__init__()
 
-        #creating layers for later use; order doesn't matter
-        #__TESTING
-        self.__ConvSeq = nn.Sequential(
-            #convolutional layer
+        # creating layers for later use; order doesn't matter
+
+        # __TESTING
+        self.ConvSeqMNIST = nn.Sequential(
+            # convolutional layer
             nn.Conv2d(1, 28, kernel_size=3, stride=1, padding=1),
-            #nn.Dropout2d(p=0.5),
+            # nn.Dropout2d(p=0.5),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-            #pooling is used to make the detection of features less sensitive to scale and orientation changes
+            # pooling is used to make the detection of features less sensitive to scale and orientation changes
         )
-        self.__FCSeq = nn.Sequential(
-            #torch.nn.Linear(in_features, out_features)
+        self.FCSeqMNIST = nn.Sequential(
+            # torch.nn.Linear(in_features, out_features)
             nn.Linear(28*14*14, 32),
             nn.Linear(32, 10)
         )
-        #Convolution -> ReLU -> Max Pooling
+        # Convolution -> ReLU -> Max Pooling
         self.ConvSeq = nn.Sequential(
-            #convolutional layer
+            # convolutional layer
             nn.Conv2d(3, 18, kernel_size=3, stride=1, padding=1),
             #nn.Dropout2d(p=0.5),
             #nn.ReLU(),
@@ -107,11 +109,11 @@ class ConvNet(nn.Module):
 
     def forward(self, x): #overrides default; forward pass; do not call
         #Conv -> Dropout -> ReLU -> Max Pool
-        x = self.__ConvSeq(x)
+        x = self.ConvSeqMNIST(x)
         #reshape tensor, doesn't copy memory
         x = x.view(-1, 28*14*14)
         #fully connected -> fully connected
-        x = self.__FCSeq(x)
+        x = self.FCSeqMNIST(x)
         return x
 
     #train the network
@@ -172,7 +174,7 @@ class ConvNet(nn.Module):
         loss = nn.CrossEntropyLoss()
         total_loss = 0
 
-        with torch.no_grad(): #dont compute gradients
+        with no_grad(): #dont compute gradients
 
             for inputs, labels in test_loader:
                 #Wrap tensors in Variables
