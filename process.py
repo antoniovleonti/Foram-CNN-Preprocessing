@@ -54,7 +54,6 @@ def crop(src):
     for c in ctr:
         x, y, __x, __y = cv2.boundingRect(c) #candidate coords
         #find corners
-        if()
         xmin, ymin = min(x, xmin), min(y, ymin)
         xmax, ymax = max(x+__x, xmax), max(y+__y, ymax)
 
