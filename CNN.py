@@ -3,63 +3,58 @@
 #   Test CNN: Made to familiarize myself with CNN architecture, python, and PyTorch.
 
 
-
 #import numpy #handles very large arrays
 from numpy import arange, int64, random
 
 #import torchvision
-from torchvision.datasets import MNIST #our dataset
-from torchvision import transforms
+from torchvision import datasets, transforms
 
-#import torch
-from torch.utils.data.sampler import SubsetRandomSampler
-from torch.utils.data import DataLoader
+import torch
 from torch.autograd import Variable
-from torch.optim import Adam #optimizer
-from torch import manual_seed, nn, no_grad
+from torch import nn
 
 from time import time
 
 
+def main():
+    in_shape = (1,64)
 
-def main(): # ALL TEMPORARY... Just for testing CNN on a test dataset
-    #set a standard random seed for reproducible results.
-    random.seed(144)
-    manual_seed(144)
+    classes = ("amphistegina", "glob")
 
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5],[0.5])])
+    net = ConvNet()
 
-    #download data
-    train_set = MNIST(root='./mnist', train=True, download=True, transform=transform)
-    test_set = MNIST(root='./mnist', train=False, download=True, transform=transform)
-
-    #counts of images
-    n_training = 50000
-    n_val = 10000
-    n_test = 10000
-
-    #Make samplers for each
-    train_sampler = SubsetRandomSampler(arange(n_training, dtype=int64))
-    val_sampler = SubsetRandomSampler(arange(n_training, n_training + n_val, dtype=int64))
-    test_sampler = SubsetRandomSampler(arange(n_test, dtype=int64))
-    #numpy.arange(min,max) = min, min+1, ..., max-1
-
-    #Make data loaders for each
-    train_loader = DataLoader(train_set, batch_size=32, sampler=train_sampler, num_workers=2)
-    val_loader = DataLoader(train_set, batch_size=32, sampler=val_sampler, num_workers=2)
-    test_loader = DataLoader(test_set, batch_size=32, sampler=test_sampler, num_workers=2)
-
-    #We then designate the 10 possible labels for each image:
-    classes = ( 'plane', 'car', 'bird', 'cat', 'deer',
-                'dog', 'frog', 'horse', 'ship', 'truck' )
-
-    net = ConvNet() #initialize net
-    #train net
-    net.train(train_loader, val_loader, 5, 0.001)
-    #see how it performs on test data
-    net.test(test_loader)
+    net.train(
+        #data loaders
+        loaddir("/Users/antoniovleonti/Desktop/Research/data/training", 64),
+        loaddir("/Users/antoniovleonti/Desktop/Research/data/validation", 64),
+        #epochs, learning rate
+        3, .01
+    )
 
 
+
+def loaddir(dir, batch_size):
+    """returns a dataloader from dir with batch_size
+    """
+    return(
+        #create a data loader
+        torch.utils.data.DataLoader(
+            #from the dataset held in this directory
+            datasets.ImageFolder(
+                root = dir,
+                #turn it into a tensor and normalize images
+                transform = transforms.Compose(
+                #normalize to mean and standard deviation of .5
+                    [transforms.ToTensor(), transforms.Normalize([0.5],[0.5])]
+                )
+            ),
+            #num of images in training partitions
+            batch_size=batch_size,
+            #max processes retrieving data from drive at a time
+            num_workers=0,
+            shuffle=True
+        )
+    )
 
 # https://pytorch.org/docs/stable/nn.html?highlight=torch.nn#torch.nn.Module
 # direct implementation questions here^^
@@ -73,24 +68,14 @@ class ConvNet(nn.Module):
 
         # creating layers for later use; order doesn't matter
 
-        # __TESTING
-        self.ConvSeqMNIST = nn.Sequential(
-            # convolutional layer
-            nn.Conv2d(1, 28, kernel_size=3, stride=1, padding=1),
-            # nn.Dropout2d(p=0.5),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-            # pooling is used to make the detection of features less sensitive to scale and orientation changes
-        )
-        self.FCSeqMNIST = nn.Sequential(
-            # torch.nn.Linear(in_features, out_features)
-            nn.Linear(28*14*14, 32),
-            nn.Linear(32, 10)
-        )
         # Convolution -> ReLU -> Max Pooling
         self.ConvSeq = nn.Sequential(
             # convolutional layer
-            nn.Conv2d(3, 18, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=1),
+
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+
+            nn.Conv2d(32, 16, kernel_size=5, stride=1, padding=1),
             #nn.Dropout2d(p=0.5),
             #nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
@@ -99,8 +84,8 @@ class ConvNet(nn.Module):
         #Fully Connected -> Fully Connected
         self.FCSeq = nn.Sequential(
             #torch.nn.Linear(in_features, out_features)
-            nn.Linear(18*16*16, 64),
-            nn.Linear(64, 10)
+            nn.Linear(3136, 64),
+            nn.Linear(64, 2)
         )
 
 
@@ -108,18 +93,20 @@ class ConvNet(nn.Module):
     # ! "Although the recipe for forward pass needs to be defined within forward(), one should call the Module instance afterwards instead [...] since [the module instance] takes care of running the registered hooks while [forward()] silently ignores them."
 
     def forward(self, x): #overrides default; forward pass; do not call
+        """defines our computational graph
+        """
         #Conv -> Dropout -> ReLU -> Max Pool
-        x = self.ConvSeqMNIST(x)
+        x = self.ConvSeq(x)
         #reshape tensor, doesn't copy memory
-        x = x.view(-1, 28*14*14)
+        x = x.view(-1, 3136)
         #fully connected -> fully connected
-        x = self.FCSeqMNIST(x)
+        x = self.FCSeq(x)
         return x
 
     #train the network
     def train(self, train_loader, val_loader, n_epochs, learning_rate):
         #optimizer and loss functions
-        optimizer = Adam(self.parameters(), lr=learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         loss = nn.CrossEntropyLoss()
         #start the clock
         train_start = time()
@@ -156,7 +143,7 @@ class ConvNet(nn.Module):
                 #Every 10th batch of an epoch
                 if (i + 1) % (len(train_loader)//10 + 1) == 0:
                     #print some stats
-                    print("Epoch {}, {:d}%\ttrain_loss: {:.2f}, took: {:.2f}s".format(epoch+1, int(100 * (i+1) / len(train_loader)), running_loss / len(train_loader), time() - epoch_start))
+                    print("Epoch {}, {:d}%\ttrain_loss: {:.5f}, took: {:.2f}s".format(epoch+1, int(100 * (i+1) / len(train_loader)), running_loss / len(train_loader), time() - epoch_start))
                     #^^^ "len(train_loader)" = # of image batches
 
                     #Reset running loss and time
@@ -174,7 +161,7 @@ class ConvNet(nn.Module):
         loss = nn.CrossEntropyLoss()
         total_loss = 0
 
-        with no_grad(): #dont compute gradients
+        with torch.no_grad(): #dont compute gradients
 
             for inputs, labels in test_loader:
                 #Wrap tensors in Variables
