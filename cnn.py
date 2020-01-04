@@ -63,10 +63,7 @@ class ConvNet(nn.Module):
     # Our batch shape for input x is (3, 32, 32)
 
     def __init__(self): # overrides default; initializes ConvNet object
-
         super(ConvNet, self).__init__()
-
-        # creating layers for later use; order doesn't matter
 
         # Convolution -> ReLU -> Max Pooling
         self.ConvSeq = nn.Sequential(
