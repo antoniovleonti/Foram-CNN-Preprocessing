@@ -4,22 +4,30 @@
 
 
 from os import listdir
+from math import sqrt
 import cv2
 import numpy
 
 
-def main():
+def main():# example usage
+    root = "/Users/antoniovleonti/Desktop/Research/"
+    dirs=( # paths to images (relative to root/<src|data>/) & threshs
+        ("validation/amphistegina/",.01), ("training/amphistegina/",.01),
+        ("validation/glob/",.05),         ("training/glob/",.05)
+    )
+    l = 64 # height and width
 
-    dirs = (("images/training/","_dump/training/"),
-            ("images/validation/","_dump/validation/"))
-    len = 64
+    for d, t in dirs:
+        # process, copy to another directory
+        print("processing: "+root+"src/"+d)
+        processdir(
+            srcdir = root+"src/"+d,
+            dstdir = root+"data/"+d,
+            height = l, thresh = t
+        )
 
-    for srcdir, dstdir in dirs:
-        #preprocess these folders
-        processdir(srcdir = srcdir, dstdir = dstdir, height = len)
 
-
-def processdir(srcdir, height, dstdir = None, width = None):
+def processdir(srcdir, height, dstdir = None, width = None, thresh = 0):
     """processdir() iterates through all images in srcdir/, 'frames' the
     contents (crop()'s in a square around it), then resizes the image to
     height x width before saving to dstdir/ (or back to srcdir/)
@@ -33,14 +41,14 @@ def processdir(srcdir, height, dstdir = None, width = None):
         #check extension
         if name.rpartition('.')[-1].lower() in ("jpg", "jpeg", "png", "tif"):
             #crop
-            cropped = crop(cv2.imread(srcdir+name,0))
+            img = crop(src = cv2.imread(srcdir+name,0), thresh = thresh)
             #resize & save
-            cv2.imwrite(dstdir+name, cv2.resize(cropped,(width,height)))
+            cv2.imwrite(dstdir+name, cv2.resize(img, (width,height)))
 
 
-def crop(src):
-    """crop() removes the empty space around an image's contents. IT DOES NOT
-    ANALYZE CONTENTS... Any "noise" will be included in the crop.
+def crop(src, thresh = 0):
+    """crop() removes the empty space around an image's contents. It draws
+    bounding boxes around
     """
     #threshold
     thr = cv2.threshold(src, 0, 255, cv2.THRESH_OTSU)[1]
@@ -52,10 +60,12 @@ def crop(src):
 
     #make one big bounding box
     for c in ctr:
-        x, y, __x, __y = cv2.boundingRect(c) #candidate coords
-        #find corners
-        xmin, ymin = min(x, xmin), min(y, ymin)
-        xmax, ymax = max(x+__x, xmax), max(y+__y, ymax)
+        x, y, dx, dy = cv2.boundingRect(c) #candidate coords
+        # ensure current contour meets thresh
+        if hypot(dx,dy) > thresh * hypot(*src.shape[:2]):
+            #resize bounding box if needed
+            xmin, ymin = min(x, xmin),min(y, ymin)
+            xmax, ymax = max(x+dx, xmax), max(y+dy, ymax)
 
     #find side length & new bottom left corner
     len = max(xmax-xmin, ymax-ymin)
@@ -64,6 +74,11 @@ def crop(src):
 
     #use numpy slicing to crop src
     return(src[ymin:ymin+len, xmin:xmin+len])
+
+def hypot(a, b):
+    """calculates hypotenuse of vectors a and b
+    """
+    return sqrt(a ** 2 + b ** 2)
 
 
 if __name__ == '__main__':
