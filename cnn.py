@@ -1,6 +1,7 @@
 #   Antonio Leonti
 #   12.29.19
-#   Test CNN: Made to familiarize myself with CNN architecture, python, and PyTorch.
+#   Convolutional neural network: takes custom dataset (datasets defined in the
+#   train() call in main())
 
 
 #import numpy #handles very large arrays
