@@ -81,5 +81,5 @@ def hypot(a, b):
     return sqrt(a ** 2 + b ** 2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
