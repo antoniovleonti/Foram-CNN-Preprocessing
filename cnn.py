@@ -4,34 +4,55 @@
 #   train() call in main())
 
 
+import os
 #import numpy #handles very large arrays
 from numpy import arange, int64, random
-
+import cv2
 #import torchvision
 from torchvision import datasets, transforms
-
 import torch
 from torch.autograd import Variable
 from torch import nn
 
 from time import time
 
+TRANSFORMS = transforms.Compose(
+    #normalize to mean and standard deviation of .5
+    [transforms.ToTensor(), transforms.Normalize([0.5],[0.5])]
+)
 
 def main():
-    in_shape = (1,64)
-
-    classes = ("amphistegina", "glob")
+    root = "/Users/antoniovleonti/Desktop/Research/"
+    classes = ("amphistegina", "glob", "noise")
 
     net = ConvNet()
+    #if already trained
+    if "trained_net" in os.listdir(root+"cnn/"):
+        #load model
+        net.load_state_dict(torch.load(root+"cnn/trained_net"))
+        print("\"trained_net\" loaded.")
+    else: #else train a new one
+        print("\"trained_net\" not found; training now.")
+        net.train(  loaddir(root+"data/training/", 128),
+                    loaddir(root+"data/validation/", 128), #data loaders
+                    1, .001 #epochs, learning rate
+        )
+        torch.save(net.state_dict(), root+"cnn/trained_net")
 
-    net.train(
-        #data loaders
-        loaddir("/Users/antoniovleonti/Desktop/Research/data/training", 64),
-        loaddir("/Users/antoniovleonti/Desktop/Research/data/validation", 64),
-        #epochs, learning rate
-        3, .01
-    )
+    for data in loaddir(root+"data/test/",2):
+        #Get inputs
+        inputs = data[0]
 
+        #Wrap them in a Variable object
+        inputs = Variable(inputs)
+        print(classes[max(*nn.functional.softmax(net(inputs),dim=-1))])
+
+
+
+def loadimg(path):
+    """load single image located at path - nice for testing the network
+    """
+    return(TRANSFORMS(cv2.imread(path,0)))
 
 
 def loaddir(dir, batch_size):
@@ -44,15 +65,12 @@ def loaddir(dir, batch_size):
             datasets.ImageFolder(
                 root = dir,
                 #turn it into a tensor and normalize images
-                transform = transforms.Compose(
-                #normalize to mean and standard deviation of .5
-                    [transforms.ToTensor(), transforms.Normalize([0.5],[0.5])]
-                )
+                transform = TRANSFORMS
             ),
             #num of images in training partitions
             batch_size=batch_size,
             #max processes retrieving data from drive at a time
-            num_workers=0,
+            num_workers=2,
             shuffle=True
         )
     )
@@ -70,12 +88,8 @@ class ConvNet(nn.Module):
         self.ConvSeq = nn.Sequential(
             # convolutional layer
             nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=1),
-
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
-
             nn.Conv2d(32, 16, kernel_size=5, stride=1, padding=1),
-            #nn.Dropout2d(p=0.5),
-            #nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
             #pooling is used to make the detection of features less sensitive to scale and orientation changes
         )
@@ -83,7 +97,7 @@ class ConvNet(nn.Module):
         self.FCSeq = nn.Sequential(
             #torch.nn.Linear(in_features, out_features)
             nn.Linear(3136, 64),
-            nn.Linear(64, 2)
+            nn.Linear(64, 3)
         )
 
 
@@ -103,6 +117,8 @@ class ConvNet(nn.Module):
 
     #train the network
     def train(self, train_loader, val_loader, n_epochs, learning_rate):
+        """trains the neural network
+        """
         #optimizer and loss functions
         optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         loss = nn.CrossEntropyLoss()
