@@ -27,7 +27,7 @@ def main():# example usage
         )
 
 
-def processdir(srcdir, height, dstdir = None, width = None, thresh = 0):
+def process_dir(srcdir, height, dstdir = None, width = None, thresh = 0):
     """processdir() iterates through all images in srcdir/, 'frames' the
     contents (crop()'s in a square around it), then resizes the image to
     height x width before saving to dstdir/ (or back to srcdir/)
