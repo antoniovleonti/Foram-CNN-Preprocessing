@@ -34,14 +34,14 @@ def main():
 
     else: #else train a new one
         print("\"trained_net\" not found; training now.")
-        net.train(  loaddir(root+"data/train/", 128),
-                    loaddir(root+"data/vali/", 128), #data loaders
+        net.train(  load_dir(root+"data/train/", 128),
+                    load_dir(root+"data/vali/", 128), #data loaders
                     1, .001 #epochs, learning rate
         )
         torch.save(net.state_dict(), root+"cnn/trained_net")
 
 
-def loaddir(dir, batch_size):
+def load_dir(dir, batch_size):
     """returns a dataloader from dir with batch_size
     """
     return(
@@ -54,15 +54,15 @@ def loaddir(dir, batch_size):
                 transform = TRANSFORMS
             ),
             #num of images in training partitions
-            batch_size=batch_size,
+            batch_size = batch_size,
             #max processes retrieving data from drive at a time
-            num_workers=2,
-            shuffle=True
+            num_workers = 2,
+            shuffle = True
         )
     )
 
 # https://pytorch.org/docs/stable/nn.html?highlight=torch.nn#torch.nn.Module
-# direct implementation questions here^^
+# direct most implementation questions here^^
 class ConvNet(nn.Module):
 
     def __init__(self): # overrides default; initializes ConvNet object
@@ -84,11 +84,8 @@ class ConvNet(nn.Module):
         )
 
 
-    #   "Defines the computation performed at every call."
-    # ! "Although the recipe for forward pass needs to be defined within forward(), one should call the Module instance afterwards instead [...] since [the module instance] takes care of running the registered hooks while [forward()] silently ignores them."
-
-    def forward(self, x): #overrides default; forward pass; do not call
-        """defines our computational graph
+    def forward(self, x): #overrides default; do not call
+        """defines our computational graph. Do not call this method
         """
         #Conv -> Dropout -> ReLU -> Max Pool
         x = self.ConvSeq(x)
@@ -110,19 +107,16 @@ class ConvNet(nn.Module):
 
         #Loop for n_epochs
         for epoch in range(n_epochs):
-            #start the clock
-            epoch_start = time()
-
             #initialize variables
-            running_loss = 0.0
             total_train_loss = 0
 
             for i, data in enumerate(train_loader, 0):
-                #Get inputs
-                inputs, labels = data
+                #Reset running loss and time
+                running_loss = 0.0
+                epoch_start = time()
 
-                #Wrap them in a Variable object
-                inputs, labels = Variable(inputs), Variable(labels)
+                #Get inputs & wrap them in a Variable object
+                inputs, labels = Variable(data[0]), Variable(data[1])
 
                 #Set the parameter gradients to zero
                 optimizer.zero_grad()
@@ -142,10 +136,6 @@ class ConvNet(nn.Module):
                     #print some stats
                     print("Epoch {}, {:d}%\ttrain_loss: {:.5f}, took: {:.2f}s".format(epoch+1, int(100 * (i+1) / len(train_loader)), running_loss / len(train_loader), time() - epoch_start))
                     #^^^ "len(train_loader)" = # of image batches
-
-                    #Reset running loss and time
-                    running_loss = 0.0
-                    epoch_start = time()
 
             #At the end of the epoch, do a pass on the validation set
             self.test(val_loader)
