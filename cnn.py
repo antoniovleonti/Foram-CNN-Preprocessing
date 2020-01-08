@@ -23,36 +23,22 @@ TRANSFORMS = transforms.Compose(
 
 def main():
     root = "/Users/antoniovleonti/Desktop/Research/"
-    classes = ("amphistegina", "glob", "noise")
+    classes = ( "amp_radiarta/", "glob_menardii/", "glob_ruber",
+                "nglob_dutertrei/", "tril_sacculifer/" )
 
     net = ConvNet()
     #if already trained
     if "trained_net" in os.listdir(root+"cnn/"):
         #load model
         net.load_state_dict(torch.load(root+"cnn/trained_net"))
-        print("\"trained_net\" loaded.")
+
     else: #else train a new one
         print("\"trained_net\" not found; training now.")
-        net.train(  loaddir(root+"data/training/", 128),
-                    loaddir(root+"data/validation/", 128), #data loaders
+        net.train(  loaddir(root+"data/train/", 128),
+                    loaddir(root+"data/vali/", 128), #data loaders
                     1, .001 #epochs, learning rate
         )
         torch.save(net.state_dict(), root+"cnn/trained_net")
-
-    for data in loaddir(root+"data/test/",2):
-        #Get inputs
-        inputs = data[0]
-
-        #Wrap them in a Variable object
-        inputs = Variable(inputs)
-        print(classes[max(*nn.functional.softmax(net(inputs),dim=-1))])
-
-
-
-def loadimg(path):
-    """load single image located at path - nice for testing the network
-    """
-    return(TRANSFORMS(cv2.imread(path,0)))
 
 
 def loaddir(dir, batch_size):
@@ -79,8 +65,6 @@ def loaddir(dir, batch_size):
 # direct implementation questions here^^
 class ConvNet(nn.Module):
 
-    # Our batch shape for input x is (3, 32, 32)
-
     def __init__(self): # overrides default; initializes ConvNet object
         super(ConvNet, self).__init__()
 
@@ -91,13 +75,12 @@ class ConvNet(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
             nn.Conv2d(32, 16, kernel_size=5, stride=1, padding=1),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-            #pooling is used to make the detection of features less sensitive to scale and orientation changes
         )
         #Fully Connected -> Fully Connected
         self.FCSeq = nn.Sequential(
             #torch.nn.Linear(in_features, out_features)
             nn.Linear(3136, 64),
-            nn.Linear(64, 3)
+            nn.Linear(64, 5)
         )
 
 
