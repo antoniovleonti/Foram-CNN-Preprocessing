@@ -34,11 +34,41 @@ def main():
 
     else: #else train a new one
         print("\"trained_net\" not found; training now.")
+
+        #train the network
+        #optimizer and loss functions
+        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
+        loss = nn.CrossEntropyLoss()
+
+        train_start = time()
+
+        #Loop for n_epochs
+        for epoch in range(n_epochs):
+            #initialize variables
+            total_train_loss = 0
+
+
+            #Print statistics
+            running_loss += loss_size.data
+            total_train_loss += loss_size.data
+
+            #Every 10th batch of an epoch
+            if (i + 1) % (len(train_loader)//10 + 1) == 0:
+                #print some stats
+                print("Epoch {}, {:d}%\ttrain_loss: {:.5f}, took: {:.2f}s".format(epoch+1, int(100*(i+1) / len(train_loader)), running_loss / len(train_loader), time() - epoch_start))
+                #^^^ "len(train_loader)" = # of image batches
+
+            #At the end of the epoch, do a pass on the validation set
+            self.test(val_loader)
+
+    print("Training finished, took {:.2f}s".format(time() - train_start))
+
         net.train(  load_dir(root+"data/train/", 128),
                     load_dir(root+"data/vali/", 128), #data loaders
                     1, .001 #epochs, learning rate
         )
         torch.save(net.state_dict(), root+"cnn/trained_net")
+
 
 
 def load_dir(dir, batch_size):
@@ -66,14 +96,19 @@ def load_dir(dir, batch_size):
 class ConvNet(nn.Module):
 
     def __init__(self): # overrides default; initializes ConvNet object
+        """Initializes all new ConvNet objects as well as layers needed for our
+        computational graph
+        """
         super(ConvNet, self).__init__()
 
         # Convolution -> ReLU -> Max Pooling
         self.ConvSeq = nn.Sequential(
             # convolutional layer
             nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=1),
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
             nn.Conv2d(32, 16, kernel_size=5, stride=1, padding=1),
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         )
         #Fully Connected -> Fully Connected
@@ -95,57 +130,30 @@ class ConvNet(nn.Module):
         x = self.FCSeq(x)
         return x
 
-    #train the network
-    def train(self, train_loader, val_loader, n_epochs, learning_rate):
-        """trains the neural network
+
+    def train(self, loader, optimizer, criterion = nn.CrossEntropyLoss()):
+        """trains over data once (one epoch)
         """
-        #optimizer and loss functions
-        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
-        loss = nn.CrossEntropyLoss()
         #start the clock
-        train_start = time()
+        running_loss = 0.0
 
-        #Loop for n_epochs
-        for epoch in range(n_epochs):
-            #initialize variables
-            total_train_loss = 0
+        for data in train_loader:
+            #Get inputs & wrap them in a Variable object
+            #inputs, labels = Variable(data[0]), Variable(data[1])
+            inputs, labels = data
 
-            for i, data in enumerate(train_loader, 0):
-                #Reset running loss and time
-                running_loss = 0.0
-                epoch_start = time()
+            #Set the parameter gradients to zero
+            optimizer.zero_grad()
 
-                #Get inputs & wrap them in a Variable object
-                inputs, labels = Variable(data[0]), Variable(data[1])
+            #Forward pass, backward pass, optimize
+            loss = criterion(self(inputs), labels)
+            loss.backward()
+            optimizer.step()
 
-                #Set the parameter gradients to zero
-                optimizer.zero_grad()
 
-                #Forward pass, backward pass, optimize
-                outputs = self(inputs)
-                loss_size = loss(outputs, labels)
-                loss_size.backward()
-                optimizer.step()
-
-                #Print statistics
-                running_loss += loss_size.data
-                total_train_loss += loss_size.data
-
-                #Every 10th batch of an epoch
-                if (i + 1) % (len(train_loader)//10 + 1) == 0:
-                    #print some stats
-                    print("Epoch {}, {:d}%\ttrain_loss: {:.5f}, took: {:.2f}s".format(epoch+1, int(100 * (i+1) / len(train_loader)), running_loss / len(train_loader), time() - epoch_start))
-                    #^^^ "len(train_loader)" = # of image batches
-
-            #At the end of the epoch, do a pass on the validation set
-            self.test(val_loader)
-
-        print("Training finished, took {:.2f}s".format(time() - train_start))
-
-    def test(self, test_loader):
+    def validate(self, test_loader, criterion = nn.CrossEntropyLoss()):
 
         #loss function & variable
-        loss = nn.CrossEntropyLoss()
         total_loss = 0
 
         with torch.no_grad(): #dont compute gradients
