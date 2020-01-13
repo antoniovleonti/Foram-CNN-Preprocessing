@@ -1,7 +1,6 @@
 #   Antonio Leonti
 #   12.29.19
-#   Convolutional neural network: takes custom dataset (datasets defined in the
-#   train() call in main())
+#   Convolutional neural network
 
 
 import os
@@ -15,60 +14,46 @@ from torch.autograd import Variable
 from torch import nn
 
 from time import time
-
-TRANSFORMS = transforms.Compose(
-    #normalize to mean and standard deviation of .5
-    [transforms.ToTensor(), transforms.Normalize([0.5],[0.5])]
-)
+from math import ceil
 
 def main():
+    #transformation applied to all images
+
     root = "/Users/antoniovleonti/Desktop/Research/"
     classes = ( "amp_radiarta/", "glob_menardii/", "glob_ruber",
                 "nglob_dutertrei/", "tril_sacculifer/" )
 
     net = ConvNet()
     #if already trained
-    if "trained_net" in os.listdir(root+"cnn/"):
+    if "trained_net" in os.listdir(root+"cnn/") and False:
         #load model
         net.load_state_dict(torch.load(root+"cnn/trained_net"))
 
-    else: #else train a new one
-        print("\"trained_net\" not found; training now.")
-
-        #train the network
+    else:
+        time_t = time()
         #optimizer and loss functions
-        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
-        loss = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(net.parameters(), lr = .0001)
+        criterion = nn.CrossEntropyLoss()
+        #create data loaders
+        loader_t = load_dir(root+"data/train/", 128)
+        loader_v = load_dir(root+"data/validation/", 128)
 
-        train_start = time()
-
-        #Loop for n_epochs
-        for epoch in range(n_epochs):
-            #initialize variables
-            total_train_loss = 0
-
-
-            #Print statistics
-            running_loss += loss_size.data
-            total_train_loss += loss_size.data
-
-            #Every 10th batch of an epoch
-            if (i + 1) % (len(train_loader)//10 + 1) == 0:
-                #print some stats
-                print("Epoch {}, {:d}%\ttrain_loss: {:.5f}, took: {:.2f}s".format(epoch+1, int(100*(i+1) / len(train_loader)), running_loss / len(train_loader), time() - epoch_start))
-                #^^^ "len(train_loader)" = # of image batches
+        for epoch in range(5):
+            time_e = time()
+            #perform one epoch of training, record the loss
+            loss_t = net.train( loader    = loader_t,
+                                optimizer = optimizer,
+                                criterion = criterion )
 
             #At the end of the epoch, do a pass on the validation set
-            self.test(val_loader)
+            loss_v = net.validate(loader_v)
 
-    print("Training finished, took {:.2f}s".format(time() - train_start))
+            print( "Epoch #{:d};  T.loss {:.3f};  V.loss {:.3f};  Time {:.3f}"
+                   .format(epoch, loss_t, loss_v, time()-time_e)              )
 
-        net.train(  load_dir(root+"data/train/", 128),
-                    load_dir(root+"data/vali/", 128), #data loaders
-                    1, .001 #epochs, learning rate
-        )
+        print("\nTraining finished! Time: {:.3f}s".format(time()-time_t))
+
         torch.save(net.state_dict(), root+"cnn/trained_net")
-
 
 
 def load_dir(dir, batch_size):
@@ -81,7 +66,9 @@ def load_dir(dir, batch_size):
             datasets.ImageFolder(
                 root = dir,
                 #turn it into a tensor and normalize images
-                transform = TRANSFORMS
+                transform = transforms.Compose(
+                    [transforms.ToTensor(), transforms.Normalize([0.5],[0.5])]
+                )
             ),
             #num of images in training partitions
             batch_size = batch_size,
@@ -96,14 +83,13 @@ def load_dir(dir, batch_size):
 class ConvNet(nn.Module):
 
     def __init__(self): # overrides default; initializes ConvNet object
-        """Initializes all new ConvNet objects as well as layers needed for our
+        """Initializes all new ConvNet object as well as layers needed for our
         computational graph
         """
         super(ConvNet, self).__init__()
 
-        # Convolution -> ReLU -> Max Pooling
+        # { Convolution -> ReLU -> Max Pool }x2
         self.ConvSeq = nn.Sequential(
-            # convolutional layer
             nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
@@ -132,42 +118,41 @@ class ConvNet(nn.Module):
 
 
     def train(self, loader, optimizer, criterion = nn.CrossEntropyLoss()):
-        """trains over data once (one epoch)
+        """a single training epoch
         """
-        #start the clock
-        running_loss = 0.0
-
-        for data in train_loader:
-            #Get inputs & wrap them in a Variable object
-            #inputs, labels = Variable(data[0]), Variable(data[1])
-            inputs, labels = data
-
+        t0 = time()
+        lossSum = 0
+        for i, (inputs, labels) in enumerate(loader):
             #Set the parameter gradients to zero
             optimizer.zero_grad()
-
             #Forward pass, backward pass, optimize
-            loss = criterion(self(inputs), labels)
+            loss = criterion(self(inputs), labels) #self(inputs) = predictions
             loss.backward()
             optimizer.step()
+            #record loss
+            lossSum += loss.data
+            #progress bar
+            print(  "\r\tEpoch progress: ",
+                    *('█' for _ in range((i+1) // ceil(len(loader)/10))),
+                    *('▁' for _ in range(10 - (i+1) // ceil(len(loader)/10))),
+                    "\tLoss: {:5.3f}".format(float(lossSum/i)),
+                    sep = '', end = '\r', flush = True
+            )
+
+        return(float(lossSum / len(loader)))
 
 
-    def validate(self, test_loader, criterion = nn.CrossEntropyLoss()):
-
-        #loss function & variable
-        total_loss = 0
-
-        with torch.no_grad(): #dont compute gradients
-
-            for inputs, labels in test_loader:
-                #Wrap tensors in Variables
-                inputs, labels = Variable(inputs), Variable(labels)
-
+    def validate(self, loader, criterion = nn.CrossEntropyLoss()):
+        """ exactly the same as training, but without backpropagation
+        """
+        lossSum = 0
+        with torch.no_grad(): #dont compute gradients (much faster)
+            for inputs, labels in loader:
                 #Forward pass
-                outputs = self(inputs)
-                loss_size = loss(outputs, labels)
-                total_loss += loss_size.data
+                loss = criterion(self(inputs), labels)
+                lossSum += loss.data
 
-        print("Test loss = {:.2f}".format(total_loss / len(test_loader)))
+        return(float(lossSum / len(loader)))
 
-if __name__ == '__main__': #do not touch
+if __name__ == '__main__':
     main()
