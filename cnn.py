@@ -120,7 +120,6 @@ class ConvNet(nn.Module):
     def train(self, loader, optimizer, criterion = nn.CrossEntropyLoss()):
         """a single training epoch
         """
-        t0 = time()
         lossSum = 0
         for i, (inputs, labels) in enumerate(loader):
             #Set the parameter gradients to zero
@@ -132,10 +131,11 @@ class ConvNet(nn.Module):
             #record loss
             lossSum += loss.data
             #progress bar
-            print(  "\r\tEpoch progress: ",
+            print(  "\r>Training ",
                     *('█' for _ in range((i+1) // ceil(len(loader)/10))),
                     *('▁' for _ in range(10 - (i+1) // ceil(len(loader)/10))),
-                    "\tLoss: {:5.3f}".format(float(lossSum/i)),
+                    "{:3d}% ".format(int(100 * (i/len(loader)))),
+                    "Loss: {:5.3f}".format(lossSum / i),
                     sep = '', end = '\r', flush = True
             )
 
@@ -154,5 +154,5 @@ class ConvNet(nn.Module):
 
         return(float(lossSum / len(loader)))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
