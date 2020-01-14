@@ -17,17 +17,14 @@ from time import time
 from math import ceil
 
 def main():
-    #transformation applied to all images
-
-    root = "/Users/antoniovleonti/Desktop/Research/"
     classes = ( "amp_radiarta/", "glob_menardii/", "glob_ruber",
                 "nglob_dutertrei/", "tril_sacculifer/" )
 
     net = ConvNet()
     #if already trained
-    if "trained_net" in os.listdir(root+"cnn/") and False:
+    if "trained_net" in os.listdir("data/cnn_state/") and False:
         #load model
-        net.load_state_dict(torch.load(root+"cnn/trained_net"))
+        net.load_state_dict(torch.load("data/cnn_state/trained_net"))
 
     else:
         time_t = time()
@@ -35,8 +32,8 @@ def main():
         optimizer = torch.optim.Adam(net.parameters(), lr = .0001)
         criterion = nn.CrossEntropyLoss()
         #create data loaders
-        loader_t = load_dir(root+"data/train/", 128)
-        loader_v = load_dir(root+"data/validation/", 128)
+        loader_t = load_dir("data/train/", 128)
+        loader_v = load_dir("data/validation/", 128)
 
         for epoch in range(5):
             time_e = time()
@@ -53,7 +50,7 @@ def main():
 
         print("\nTraining finished! Time: {:.3f}s".format(time()-time_t))
 
-        torch.save(net.state_dict(), root+"cnn/trained_net")
+        torch.save(net.state_dict(), "data/cnn_state/trained_net")
 
 
 def load_dir(dir, batch_size):
