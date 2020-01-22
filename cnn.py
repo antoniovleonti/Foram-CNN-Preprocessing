@@ -35,6 +35,13 @@ def main():
         loader_t = load_dir("data/train/", 128)
         loader_v = load_dir("data/validation/", 128)
 
+        print(  "Beginning training...\nLayers: ",
+                sum(1 for _ in net.parameters()),
+                "\nTrainable parameters: ",
+                sum(_.numel() for _ in net.parameters() if _.requires_grad),
+                sep = '', end = "\n\n"
+            )
+
         for epoch in range(5):
             time_e = time()
             #perform one epoch of training, record the loss
@@ -81,7 +88,7 @@ class ConvNet(nn.Module):
 
     def __init__(self): # overrides default; initializes ConvNet object
         """Initializes all new ConvNet object as well as layers needed for our
-        computational graph
+        computational graph. Current number of trainable parameters: 216,341
         """
         super(ConvNet, self).__init__()
 
