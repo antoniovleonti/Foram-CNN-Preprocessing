@@ -23,9 +23,9 @@ def main(): # preprocess a training & validation datset from a single source
     for c, t in classes:
         # get the names of each enclosed file
         for name in listdir(root+"src/"+c):
-            # check extension
+            # after checking its extension...
             if name.rpartition('.')[-1].lower() in exts:
-                # determine output path
+                # determine output path (validation or training)
                 path = "train/" if name.rpartition('_')[-1][0]!='5' else "vali/"
                 # open & crop image
                 img = pw_crop(src = cv2.imread(root+"src/"+c+name,0), thr = t)
@@ -48,22 +48,22 @@ def pw_crop(src, thr = 0):
     xmin, ymin = (max(src.shape[:2]), )*2 # initialize to image limits
     xmax, ymax = (0, )*2
 
-    #make one big bounding box
+    # combine bounding boxes
     for c in ctr:
         x, y, dx, dy = cv2.boundingRect(c) #candidate bounds
         # ensure current contour meets thresh
         if _hypot(dx, dy) > thr * _hypot(*src.shape[:2]):
-            #resize bounding box if needed
+            # resize bounding box if needed
             xmin, ymin = min(x, xmin), min(y, ymin)
             xmax, ymax = max(x + dx, xmax), max(y + dy, ymax)
 
-    #find side length & new bottom left corner
+    # find side length & new bottom left corner
     len = max(xmax - xmin, ymax - ymin)
     xmin -= (len - (xmax - xmin)) // 2
     ymin -= (len - (ymax - ymin)) // 2 # bring object to the center of the image
 
-    #use numpy slicing to crop src, return result
-    return(src[ymin:ymin+len, xmin:xmin+len])
+    # use numpy slicing to crop src, return result
+    return(src[ymin: ymin+len, xmin: xmin+len])
 
 
 def __hypot(a, b):
