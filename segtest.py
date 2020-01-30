@@ -10,21 +10,41 @@ def main():
     img = cv2.imread("data/batch_test.tif", cv2.IMREAD_GRAYSCALE)
     kernel = numpy.ones((3,3),numpy.uint8) #for later
     #threshold
-    thr = cv2.threshold(img, 0,255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+    thr = cv2.threshold(img, 1,255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
 
     opening = cv2.morphologyEx(thr, cv2.MORPH_OPEN, kernel, iterations = 2)
     # sure background area
     sure_bg = cv2.dilate(opening, kernel, iterations = 3)
     # Finding sure foreground area
-    dist = cv2.distanceTransform(thr, cv2.DIST_L2, 5)
-    print(dist.max())
-    #sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)[1]
+    dist = cv2.distanceTransform(thr, cv2.DIST_L2, 3)
 
+    sure_fg = numpy.uint8(cv2.threshold(dist, 0, 255, 0)[1])
+    # Finding unknown region
+    unknown = sure_bg - sure_fg
+    # Marker labelling
+    markers = cv2.connectedComponents(sure_fg)[1]
+    # Add one to all labels so that sure background is not 0, but 1
+    markers = markers + 1
+    # Now, mark the region of unknown with zero
+    markers[unknown==255] = 0
+
+    wshed = numpy.zeros((*(img.shape),3), img.dtype)
+    for i in range(3):
+        wshed[:,:,i] = img
+
+    markers = cv2.watershed(wshed, markers)
+    wshed[markers == -1] = [255,0,0]
+
+
+    #show all images
+    show_image("src", img)
     show_image("thr", thr)
     show_image("opening", opening)
     show_image("sure_bg", sure_bg)
     show_image("dist", dist)
-    #show_image("sure_fg", sure_fg)
+    show_image("sure_fg", sure_fg)
+    show_image("unknown", unknown)
+    show_image("watershed result", wshed)
 
 def show_image(str, img):
     cv2.imshow(str, img)
@@ -57,7 +77,7 @@ def tutcode():
     # Now, mark the region of unknown with zero
     markers[unknown==255] = 0
 
-    markers = cv.watershed(img,markers)
+    markers = cv2.watershed(img,markers)
     img[markers == -1] = [255,0,0]
 
 if __name__ == "__main__":
