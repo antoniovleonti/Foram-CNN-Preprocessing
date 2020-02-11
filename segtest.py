@@ -7,6 +7,7 @@ import cv2
 
 def main():
     #import image
+<<<<<<< Updated upstream
     img = cv2.imread("data/batch_test.tif", cv2.IMREAD_GRAYSCALE) #important
     #kernel = numpy.ones((3,3),numpy.uint8) #for later
     #threshold
@@ -29,18 +30,42 @@ def main():
     #markers = markers + 1
     # Now, mark the region of unknown with zero
     #markers[unknown==255] = 0
+=======
+    img = cv2.imread("data/batch_test.tif", cv2.IMREAD_GRAYSCALE)
+    kernel = numpy.ones((3,3),numpy.uint8)
+    #threshold
+    thr = cv2.threshold(img, 1,255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+
+    #image preprocessing...
+    opening = cv2.morphologyEx(thr, cv2.MORPH_OPEN, kernel, iterations = 1)
+
+    # Marker labelling
+    markers = cv2.connectedComponents(opening)[1]
+>>>>>>> Stashed changes
 
     #wshed = numpy.zeros((*(img.shape),3), img.dtype)
     #for i in range(3):
     #    wshed[:,:,i] = img
 
+<<<<<<< Updated upstream
     #markers = cv2.watershed(wshed, markers)
     #wshed[markers == -1] = [255,0,0]
+=======
+    markers = cv2.watershed(wshed, markers)
+
+    wshed[markers == -1] = [255,255,255]
+>>>>>>> Stashed changes
 
 
     #show all images
     show_image("src", img)
+<<<<<<< Updated upstream
     
+=======
+    show_image("thr", thr)
+    show_image("opening", opening)
+    show_image("watershed result", wshed)
+>>>>>>> Stashed changes
 
 def show_image(str, img):
     cv2.imshow(str, img)
