@@ -192,7 +192,7 @@ def main():
 
     #show all images
     show_image("src", img)
-    
+
 
 def show_image(str, img):
     cv2.imshow(str, img)
