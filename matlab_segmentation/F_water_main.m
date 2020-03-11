@@ -11,6 +11,14 @@ aratio = job.aratio;
 
 disp('labelling and calculating property')
 temp_0   = bwconncomp(water.segment); %connected components
+
+% From https://www.mathworks.com/help/images/ref/labelmatrix.html, on the return value of labelmatrix()
+% "Label matrix of contiguous regions, returned as matrix of nonnegative integers. The pixels labeled 0 are the background. The pixels labeled 1 make up one object; the pixels labeled 2 make up a second object; and so on."
+% EXAMPLE: (0 is background, 1, is the first object, 2 is the second, etc.)
+% { 0 0 0 0 0 0 0 0 0 0 ;                  { 0 0 0 0 0 0 0 0 0 0 ;
+%   0 1 1 0 1 1 0 1 1 0 ;                    0 1 1 0 2 2 0 3 3 0 ;
+%   0 1 1 0 1 1 0 1 1 0 ; ->labelmatrix()->  0 1 1 0 2 2 0 3 3 0 ;
+%   0 0 0 0 0 0 0 0 0 0 }                    0 0 0 0 0 0 0 0 0 0 }
 label_0  = labelmatrix(temp_0);
 label_0p = regionprops(temp_0,'area');
 areas    = [label_0p.Area];
@@ -20,24 +28,20 @@ clear temp_0; clear label_0p;
 cri_size = job.minarea;
 clear temp;
 
-
-% t1,t2,and t3 are the dimensions of the slices
+% t1,t2,and t3 are the dimensions of all the data
 [t1,t2,t3]=size(water.segment);
 % create array of 1s of size size(water.segment)
 ridge_1=true(t1,t2,t3);
 
-% for 1 to the largest item in the array of connected components (whatever that means)
-% indices start at 1 in matlab, not zero
+% for each region... (indices start at 1 in matlab, not zero)
 for counter = 1:max(label_0(:)) % for var start:end
-    % print the counter
+    % print the counter variable
     disp(counter);
-    % if the currently selected contours area >= our previously set area threshold, ...
 
-    % WHAT DOES THIS IF BLOCK DO??? (in one sentence)
-    % it looks for a certain value in the
+    % if the area of the currently "selected" region
     if (areas(counter) >= cri_size)
         % "x = list == val" ; x is a matrix of the same size as list that has 1 where the element is equal to val and a 0 evverywhere else
-        % what exactly does it mean for a labelmatrix to "equal" an integer???
+        % make a copy of label_0 where the currently selected region is '1' and everything else is 0
         particle = label_0 == counter;
 
         % ind2sub takes linear indices and returns subscripts ...??
