@@ -1,12 +1,10 @@
-#   Antonio Leonti
-#   12.29.19
-#   Training dataset preprocessing
-
+# Antonio Leonti
+# 12.29.19
+# noise allows the user to generate an image with contents which are noise.
 
 import os
 from cv2 import imwrite
 import numpy
-
 
 def main(): # example usage
     #find avg images in each classifier
