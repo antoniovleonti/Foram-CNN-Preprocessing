@@ -52,7 +52,7 @@ for counter = 1:max(label_0(:)) % for var start:end
         % This is necessary because find() returns an array of linear indices
         [xx, yy, zz] = ind2sub([t1,t2,t3], find(particle));
 
-        disp([double(counter),double(max(label_0(:))),double(areas(counter)),double(max(areas))]);
+        disp(['stats',double(counter),double(max(label_0(:))),double(areas(counter)),double(max(areas))]);
 
         % so now we get the range of integer values in every direction where something lies at this height (height = "counter")
         xrange = min(xx):max(xx);  % 0 : x = { 0, 1, 2, ... , x-1, x }
