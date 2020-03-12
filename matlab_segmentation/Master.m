@@ -36,7 +36,7 @@ end
 
 segment = water.dark & water.ridge;
 
-imshow(segment(:,:,1));
+implay(segment, 2);
 
 save('segment','segment','job');
 
