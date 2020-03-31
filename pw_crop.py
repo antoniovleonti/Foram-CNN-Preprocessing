@@ -11,7 +11,7 @@ import numpy
 
 
 def main(): # preprocess a training & validation datset from a single source
-    root = "/Users/antoniovleonti/Desktop/Research/data/"
+    root = "data/"
     classes = ( # class names & thresholds
         ("amp_radiarta/", .01), ("glob_menardii/",.01), ("glob_ruber/", .05),
         ("nglob_dutertrei/",.05), ("tril_sacculifer/", .01)
@@ -63,7 +63,7 @@ def pw_crop(src, thr = 0):
     ymin -= (len - (ymax - ymin)) // 2 # bring object to the center of the image
 
     # use numpy slicing to crop src, return result
-    return(src[ymin: ymin+len, xmin: xmin+len])
+    return(src[ymin : ymin+len, xmin : xmin+len])
 
 
 def __hypot(a, b):

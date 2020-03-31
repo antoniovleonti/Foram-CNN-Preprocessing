@@ -60,10 +60,10 @@ for counter = 1 : max(label_0(:)) % for var start:end
         zrange = min(zz) : max(zz);
 
         % if the currently selected area > .75 * the greatest area
-        if areas(counter) > (0.75 * max(areas))
-            % just a print statement
-            disp([min(xx), max(xx), min(yy), max(yy), min(zz), max(zz)]);
-        end
+        % if areas(counter) > (0.75 * max(areas))
+        %     % just a print statement
+        %     disp([min(xx), max(xx), min(yy), max(yy), min(zz), max(zz)]);
+        % end
 
         % particle_local is the final, cropped version of the data
         particle_local = particle(xrange, yrange, zrange);

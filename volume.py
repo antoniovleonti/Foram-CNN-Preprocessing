@@ -6,7 +6,7 @@ import cv2
 import numpy
 import glob
 
-def volume_fill(data):
+def fill(data):
 
     # fill yz plane & transfer
     for x in range(data.shape[2]):
@@ -33,7 +33,7 @@ def volume_fill(data):
 
 # example use
 def main():
-    root = "/Users/antoniovleonti/Documents/GitHub/foram-cnn/data/batch/"
+    root = "data/batch/"
 
     # get sorted list of files
     imgs = []
@@ -48,15 +48,15 @@ def main():
     for z in range(data.shape[0]):
         data[z,:,:] = cv2.threshold(data[z,:,:], 0,255, cv2.THRESH_OTSU)[1]
 
-    filled = volume_fill(data)
+    filled = fill(data)
 
     for z in range(filled.shape[0]):
 
         show(filled[z,:,:])
 
 
-def show(img):
-    cv2.imshow("3dfill.py",img)
+def show(img, str = "image"):
+    cv2.imshow(str, img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

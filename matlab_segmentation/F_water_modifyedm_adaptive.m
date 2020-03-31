@@ -11,7 +11,7 @@ minima = EDM .* LM;
 values = unique(abs(minima));
 % exclude the first value (the first value is the SMALLEST)
 depths = values(2:end);
-% transposing the matrix... why??? isn't it one dimensional??
+% complex conjugate transpose? ...do we have imaginary parts? (i dont think so)
 depths = depths';
 
 MEDM = EDM;
@@ -26,6 +26,7 @@ if numel(depths) >= 2 % at least two catchments found;
 
     %fill all basins by f*H_0
     MEDM = imhmin(EDM,aratio * cri_depth);
-    MEDM(MEDM <- cri_depth) =- cri_depth;
+
+    MEDM(MEDM < -cri_depth) = -cri_depth;
 
 end
