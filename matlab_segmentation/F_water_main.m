@@ -10,7 +10,7 @@ end
 aratio = job.aratio;
 
 disp('labelling and calculating property')
-temp_0 = bwconncomp(water.segment); %connected components
+temp_0 = bwconncomp(water.segment, job.con); %connected components
 
 % From https://www.mathworks.com/help/images/ref/labelmatrix.html, on the return value of labelmatrix():
 % "Label matrix of contiguous regions, returned as matrix of nonnegative integers. The pixels labeled 0 are the background. The pixels labeled 1 make up one object; the pixels labeled 2 make up a second object; and so on."

@@ -7,7 +7,7 @@ di=ndims(EDM);
 %returns EDM with regionalmins as 1, others 0
 regionalMin = imregionalmin(EDM);
 % multiplies regionalmin by 1, others by 0
-Minvalues   = EDM. * regionalMin; 
+Minvalues   = EDM. * regionalMin;
 
 
 values      = unique(Minvalues);
