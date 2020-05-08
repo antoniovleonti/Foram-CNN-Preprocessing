@@ -19,10 +19,11 @@ def main_segmented():
         if name.rpartition('.')[-1].lower() in exts:
             # open & crop image
             img = pw_crop(src = cv2.imread(root+name,0), thr = 0.1)
+
             show(img)
 
 
-def main_test(): # preprocess a training & validation datset from a single source
+def main_training(): # preprocess a training & validation datset from a single source
     root = "data/"
     classes = ( # class names & thresholds
         ("amp_radiarta/", .01), ("glob_menardii/",.01), ("glob_ruber/", .05),
