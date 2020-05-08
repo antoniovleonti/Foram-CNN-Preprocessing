@@ -61,6 +61,7 @@ def pw_crop(src, thr = 0):
     xmin, ymin = (max(src.shape[:2]), )*2 # initialize to image limits
     xmax, ymax = (0, )*2
 
+    image_is_empty = True # flag to determine if image is empty
     # combine bounding boxes
     for c in ctr:
         x, y, dx, dy = cv2.boundingRect(c) #candidate bounds
@@ -69,7 +70,10 @@ def pw_crop(src, thr = 0):
             # resize bounding box if needed
             xmin, ymin = min(x, xmin), min(y, ymin)
             xmax, ymax = max(x + dx, xmax), max(y + dy, ymax)
+            image_is_empty = False
 
+    if image_is_empty:
+        return None
     # find side length & new bottom left corner
     len = max(xmax - xmin, ymax - ymin)
 
